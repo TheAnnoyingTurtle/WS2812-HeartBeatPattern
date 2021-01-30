@@ -1,4 +1,3 @@
-
 import array, time
 from machine import Pin
 import rp2
@@ -43,6 +42,9 @@ def pixels_show():
     sm.put(dimmer_ar, 8)
     time.sleep_ms(10)
 
+def pixels_set(i, color):
+    ar[i] = (color[1]<<16) + (color[0]<<8) + color[2]
+
 def pixels_fill(color):
     for i in range(len(ar)):
         pixels_set(i, color)
@@ -52,7 +54,6 @@ RED = (255, 0, 0)
     
 while True:   
     for e in range(13):
-        print (brightness)
         brightness= brightness- .03
         pixels_fill(RED)
         pixels_show()
@@ -63,7 +64,6 @@ while True:
     pixels_show()
 
     for e in range(13):
-        print (brightness)
         brightness= brightness- .03
         pixels_fill(RED)
         pixels_show()
@@ -75,4 +75,3 @@ while True:
 
     brightness= 1
     time.sleep(.3)
-    

@@ -1,129 +1,78 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
 
-# C extensions
-*.so
+import array, time
+from machine import Pin
+import rp2
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# Configure the number of WS2812 LEDs.
+NUM_LEDS = 13
+PIN_NUM = 18
+brightness = 1
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+@rp2.asm_pio(sideset_init=rp2.PIO.OUT_LOW, out_shiftdir=rp2.PIO.SHIFT_LEFT, autopull=True, pull_thresh=24)
+def ws2812():
+    T1 = 2
+    T2 = 5
+    T3 = 3
+    wrap_target()
+    label("bitloop")
+    out(x, 1)               .side(0)    [T3 - 1]
+    jmp(not_x, "do_zero")   .side(1)    [T1 - 1]
+    jmp("bitloop")          .side(1)    [T2 - 1]
+    label("do_zero")
+    nop()                   .side(0)    [T2 - 1]
+    wrap()
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
+# Create the StateMachine with the ws2812 program, outputting on pin
+sm = rp2.StateMachine(0, ws2812, freq=8_000_000, sideset_base=Pin(PIN_NUM))
 
-# Translations
-*.mo
-*.pot
+# Start the StateMachine, it will wait for data on its FIFO.
+sm.active(1)
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+# Display a pattern on the LEDs via an array of LED RGB values.
+ar = array.array("I", [0 for _ in range(NUM_LEDS)])
 
-# Flask stuff:
-instance/
-.webassets-cache
+##########################################################################
+def pixels_show():
+    dimmer_ar = array.array("I", [0 for _ in range(NUM_LEDS)])
+    for i,c in enumerate(ar):
+        r = int(((c >> 8) & 0xFF) * brightness)
+        g = int(((c >> 16) & 0xFF) * brightness)
+        b = int((c & 0xFF) * brightness)
+        dimmer_ar[i] = (g<<16) + (r<<8) + b
+    sm.put(dimmer_ar, 8)
+    time.sleep_ms(10)
 
-# Scrapy stuff:
-.scrapy
+def pixels_fill(color):
+    for i in range(len(ar)):
+        pixels_set(i, color)
 
-# Sphinx documentation
-docs/_build/
 
-# PyBuilder
-target/
+RED = (255, 0, 0)
+    
+while True:   
+    for e in range(13):
+        print (brightness)
+        brightness= brightness- .03
+        pixels_fill(RED)
+        pixels_show()
+        time.sleep(.02)
 
-# Jupyter Notebook
-.ipynb_checkpoints
+    brightness= 1
+    pixels_fill(RED)
+    pixels_show()
 
-# IPython
-profile_default/
-ipython_config.py
+    for e in range(13):
+        print (brightness)
+        brightness= brightness- .03
+        pixels_fill(RED)
+        pixels_show()
+        time.sleep(.02)
+    
+    brightness= 1
+    pixels_fill(RED)
+    pixels_show()
 
-# pyenv
-.python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
+    brightness= 1
+    time.sleep(.3)
+    
